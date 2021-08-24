@@ -79,10 +79,18 @@ def create_model(model_settings, model_architecture, model_size_info):
 
     elif model_architecture == 'ds_cnn':
         return create_ds_cnn_model(model_settings, model_size_info)
-
+    elif model_architecture == 'single_fc':
+        return create_singlefc_model(model_settings)
     else:
         raise Exception(f'model_architecture argument {model_architecture} not recognized'
                         f', should be one of, "dnn", "cnn", "ds_cnn" ')
+
+def create_singlefc_model(model_settings):
+    inputs = tf.keras.Input(shape=(model_settings['fingerprint_size'],), name='input')
+
+    output = tf.keras.layers.Dense(units=model_settings['label_count'], activation='softmax')(inputs)
+
+    return tf.keras.Model(inputs, output)
 
 
 def create_dnn_model(model_settings, model_size_info):
