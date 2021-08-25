@@ -55,7 +55,7 @@ def prepare_model_settings(label_count, sample_rate, clip_duration_ms,
     }
 
 
-def create_model(model_settings, model_architecture, model_size_info):
+def create_model(model_settings, model_architecture, model_size_info, is_training):
     """Builds a tf.keras model of the requested architecture compatible with the settings.
 
     Args:
@@ -81,6 +81,8 @@ def create_model(model_settings, model_architecture, model_size_info):
         return create_ds_cnn_model(model_settings, model_size_info)
     elif model_architecture == 'single_fc':
         return create_singlefc_model(model_settings)
+    elif model_architecture == 'basic_lstm':
+        return create_basiclstm_model(model_settings, model_size_info, is_training )
     else:
         raise Exception(f'model_architecture argument {model_architecture} not recognized'
                         f', should be one of, "dnn", "cnn", "ds_cnn" ')
@@ -92,6 +94,21 @@ def create_singlefc_model(model_settings):
 
     return tf.keras.Model(inputs, output)
 
+def create_basiclstm_model(model_settings,model_size_info, is_training):
+    inputs = tf.keras.Input(shape=(model_settings['fingerprint_size'], ), name='input')
+    input_frequency_size = model_settings['dct_coefficient_count']
+    input_time_size = model_settings['spectrogram_length']
+    x = tf.reshape(inputs, shape=(-1, input_time_size, input_frequency_size))
+    if is_training:
+        x = tf.keras.layers.LSTM(units=model_size_info[0], time_major=False, unroll = False)(x)
+    else:
+        x = tf.keras.layers.LSTM(units=model_size_info[0], time_major=False, unroll=True)(x)
+
+
+
+    output = tf.keras.layers.Dense(units=model_settings['label_count'], activation='softmax')(x)
+
+    return tf.keras.Model(inputs, output)
 
 def create_dnn_model(model_settings, model_size_info):
     """Builds a model with multiple hidden fully-connected layers.
